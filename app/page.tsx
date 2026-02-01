@@ -4,25 +4,102 @@ import ServiceCard from '../components/ServiceCard'
 import SearchBar from '../components/SearchBar'
 import Link from 'next/link'
 
+// Dados mockados para fallback (quando SQLite não funcionar em serverless)
+const MOCK_SERVICES = [
+  {
+    id: '1',
+    title: 'Design de Identidade Visual Completa',
+    slug: 'design-identidade-visual',
+    description: 'Criação de logotipo, paleta de cores, tipografia e manual da marca para sua empresa se destacar no mercado.',
+    category: 'design',
+    price: 1500,
+    favoritesCount: 42,
+    createdAt: new Date('2024-01-15'),
+  },
+  {
+    id: '2',
+    title: 'Desenvolvimento de Landing Page',
+    slug: 'landing-page-profissional',
+    description: 'Landing page otimizada para conversão, responsiva e integrada com ferramentas de analytics e marketing.',
+    category: 'desenvolvimento',
+    price: 2500,
+    favoritesCount: 38,
+    createdAt: new Date('2024-01-16'),
+  },
+  {
+    id: '3',
+    title: 'Consultoria em Marketing Digital',
+    slug: 'consultoria-marketing-digital',
+    description: 'Análise completa da sua presença digital com estratégias personalizadas para aumentar vendas e engajamento.',
+    category: 'marketing',
+    price: 800,
+    favoritesCount: 56,
+    createdAt: new Date('2024-01-17'),
+  },
+  {
+    id: '4',
+    title: 'Aplicativo Mobile Personalizado',
+    slug: 'app-mobile-personalizado',
+    description: 'Desenvolvimento de aplicativo nativo para iOS e Android com design moderno e funcionalidades sob medida.',
+    category: 'desenvolvimento',
+    price: 8000,
+    favoritesCount: 29,
+    createdAt: new Date('2024-01-18'),
+  },
+  {
+    id: '5',
+    title: 'Gestão de Redes Sociais',
+    slug: 'gestao-redes-sociais',
+    description: 'Planejamento de conteúdo, criação de posts, stories e gerenciamento completo das suas redes sociais.',
+    category: 'marketing',
+    price: 1200,
+    favoritesCount: 63,
+    createdAt: new Date('2024-01-19'),
+  },
+  {
+    id: '6',
+    title: 'Consultoria em Transformação Digital',
+    slug: 'consultoria-transformacao-digital',
+    description: 'Assessoria estratégica para modernizar processos, implementar tecnologias e otimizar operações empresariais.',
+    category: 'consultoria',
+    price: 3500,
+    favoritesCount: 31,
+    createdAt: new Date('2024-01-20'),
+  },
+]
+
 export default async function Page({ searchParams }: { searchParams: Promise<{ q?: string; categoria?: string }> }) {
   const { q, categoria } = await searchParams
   const query = q || ''
   const categoryFilter = categoria || ''
   
-  const services = await prisma.service.findMany({ 
-    where: {
-      AND: [
-        query ? {
-          OR: [
-            { title: { contains: query } },
-            { description: { contains: query } }
-          ]
-        } : {},
-        categoryFilter ? { category: categoryFilter } : {}
-      ]
-    },
-    orderBy: { createdAt: 'desc' } 
-  })
+  let services
+  try {
+    services = await prisma.service.findMany({ 
+      where: {
+        AND: [
+          query ? {
+            OR: [
+              { title: { contains: query } },
+              { description: { contains: query } }
+            ]
+          } : {},
+          categoryFilter ? { category: categoryFilter } : {}
+        ]
+      },
+      orderBy: { createdAt: 'desc' } 
+    })
+  } catch (error) {
+    console.error('Erro ao buscar serviços do banco:', error)
+    // Fallback para dados mockados e aplicar filtros manualmente
+    services = MOCK_SERVICES.filter(service => {
+      const matchesQuery = !query || 
+        service.title.toLowerCase().includes(query.toLowerCase()) ||
+        service.description.toLowerCase().includes(query.toLowerCase())
+      const matchesCategory = !categoryFilter || service.category === categoryFilter
+      return matchesQuery && matchesCategory
+    })
+  }
 
   return (
     <>

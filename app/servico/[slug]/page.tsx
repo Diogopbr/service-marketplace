@@ -2,10 +2,81 @@ import React from 'react'
 import { prisma } from '../../../lib/prisma'
 import { revalidatePath } from 'next/cache'
 import ContrateModal from '../../../components/ContrateModal'
+import { notFound } from 'next/navigation'
+
+// Dados mockados para fallback
+const MOCK_SERVICES = [
+  {
+    id: '1',
+    title: 'Design de Identidade Visual Completa',
+    slug: 'design-identidade-visual',
+    description: 'Criação de logotipo, paleta de cores, tipografia e manual da marca para sua empresa se destacar no mercado.',
+    category: 'design',
+    price: 1500,
+    favoritesCount: 42,
+    createdAt: new Date('2024-01-15'),
+  },
+  {
+    id: '2',
+    title: 'Desenvolvimento de Landing Page',
+    slug: 'landing-page-profissional',
+    description: 'Landing page otimizada para conversão, responsiva e integrada com ferramentas de analytics e marketing.',
+    category: 'desenvolvimento',
+    price: 2500,
+    favoritesCount: 38,
+    createdAt: new Date('2024-01-16'),
+  },
+  {
+    id: '3',
+    title: 'Consultoria em Marketing Digital',
+    slug: 'consultoria-marketing-digital',
+    description: 'Análise completa da sua presença digital com estratégias personalizadas para aumentar vendas e engajamento.',
+    category: 'marketing',
+    price: 800,
+    favoritesCount: 56,
+    createdAt: new Date('2024-01-17'),
+  },
+  {
+    id: '4',
+    title: 'Aplicativo Mobile Personalizado',
+    slug: 'app-mobile-personalizado',
+    description: 'Desenvolvimento de aplicativo nativo para iOS e Android com design moderno e funcionalidades sob medida.',
+    category: 'desenvolvimento',
+    price: 8000,
+    favoritesCount: 29,
+    createdAt: new Date('2024-01-18'),
+  },
+  {
+    id: '5',
+    title: 'Gestão de Redes Sociais',
+    slug: 'gestao-redes-sociais',
+    description: 'Planejamento de conteúdo, criação de posts, stories e gerenciamento completo das suas redes sociais.',
+    category: 'marketing',
+    price: 1200,
+    favoritesCount: 63,
+    createdAt: new Date('2024-01-19'),
+  },
+  {
+    id: '6',
+    title: 'Consultoria em Transformação Digital',
+    slug: 'consultoria-transformacao-digital',
+    description: 'Assessoria estratégica para modernizar processos, implementar tecnologias e otimizar operações empresariais.',
+    category: 'consultoria',
+    price: 3500,
+    favoritesCount: 31,
+    createdAt: new Date('2024-01-20'),
+  },
+]
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const service = await prisma.service.findUnique({ where: { slug } })
+  let service
+  try {
+    service = await prisma.service.findUnique({ where: { slug } })
+  } catch (error) {
+    console.error('Erro ao buscar metadados:', error)
+    service = MOCK_SERVICES.find(s => s.slug === slug)
+  }
   if (!service) return { title: 'Serviço não encontrado' }
   return {
     title: service.title,
@@ -15,8 +86,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function ServicePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const service = await prisma.service.findUnique({ where: { slug } })
-  if (!service) return <main className="p-6">Serviço não encontrado</main>
+  let service
+  try {
+    service = await prisma.service.findUnique({ where: { slug } })
+  } catch (error) {
+    console.error('Erro ao buscar serviço:', error)
+    service = MOCK_SERVICES.find(s => s.slug === slug)
+  }
+  if (!service) notFound()
 
   return (
     <>
